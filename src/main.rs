@@ -1,5 +1,5 @@
 use image::io::Reader as ImageReader;
-use image::{GenericImageView, Rgba};
+use image::GenericImageView;
 use std::io::{stdin,stdout,Write};
 use std::f64;
 use std::f64::INFINITY;
@@ -24,7 +24,7 @@ fn main() {
 		Err(e) => panic!("{}", e),
 	};
 	// let img: img::RgbImage = turbojpeg::decompress_image(&jpeg_data).expect("failed to decompress");
-	'E: for i in 0..img.height() {
+	for i in 0..img.height() {
 		for ii in 0..img.width() {
 			let pixel = img.get_pixel(ii, i); //Get each pixel
 			let r = pixel[0]; //grab the red byte
@@ -39,9 +39,9 @@ fn main() {
 			let r_lsb = r_byte.pop().expect("Never panic").to_string().parse::<u64>().unwrap(); // pop the lsb convert to u64 int
 			cover_object.push(r_lsb); //push to cover_object vector
 			cover_weights.push(1); //set weight for all bits to 1
-			if (cover_object.len() >= 32) {
-				break 'E
-			}
+			// if (cover_object.len() >= 32) {
+			// 	break 'E
+			// }
 		}
 	}
 
@@ -83,7 +83,7 @@ fn main() {
 	println!("cover_object.len() = {}", cover_object.len());
 	println!("message.len() = {}", message.len());
 	let sub_width = cover_object.len()/message.len(); //rate of the encoding or the width of the sub matrix H
-    let sub_height: usize = 3; //performance parameter
+    let sub_height: usize = 4; //performance parameter
     let h = 2_u64.pow(sub_height as u32); //2^h
     let mut sub_h: Vec<Vec<u64>> = Vec::new(); //create the sub_h or h_hat vector
     for i in 0..sub_height {
@@ -96,13 +96,13 @@ fn main() {
     		// }
     	} 
     }
-    println!("sub_h");
-    for i in 0..sub_h.len() {
-    	for ii in 0..sub_h[i].len() {
-    		print!("{}, ", sub_h[i][ii]);
-    	}
-    	println!(";");
-    }
+    // println!("sub_h");
+    // for i in 0..sub_h.len() {
+    // 	for ii in 0..sub_h[i].len() {
+    // 		print!("{}, ", sub_h[i][ii]);
+    // 	}
+    // 	println!(";");
+    // }
 
     let mut sub_ch: Vec<Vec<u64>> = Vec::new(); //create the column oriented sub_h or h_hat
     for i in 0..sub_width {
@@ -154,10 +154,10 @@ fn main() {
     'B: for _ in 0..(ext_width/sub_width) { //Builds the extended matrix
     	'H: for ii in 0..sub_height {
     		for iii in 0..sub_width {
-    			if (row+ii >= ext_height) {
+    			if row+ii >= ext_height {
     				break 'H
     			}
-    			if (column+iii >= ext_width) {
+    			if column+iii >= ext_width {
     				break 'B
     			}
     			ext_h[row+ii][column+iii] = sub_h[ii][iii];
@@ -174,13 +174,13 @@ fn main() {
     }
 
 
-      println!("ext_h");
-    for i in 0..ext_h.len() {
-    	for ii in 0..ext_h[i].len() {
-    		print!("{}, ", ext_h[i][ii]);
-    	}
-    	println!(";");
-    }
+    //   println!("ext_h");
+    // for i in 0..ext_h.len() {
+    // 	for ii in 0..ext_h[i].len() {
+    // 		print!("{}, ", ext_h[i][ii]);
+    // 	}
+    // 	println!(";");
+    // }
 
 	fn matrix_multi(s: &mut Vec<u64>, x: &mut Vec<u64>, ch: &Vec<Vec<u64>>, ext_height: usize) { //multiplys a vector of length equal to that of the cover object against the extended matrix. The result is a syndrom the length of the message.
 		for _ in 0..ext_height {
@@ -188,6 +188,9 @@ fn main() {
 		}
 		for i in 0..ch.len() {
 			for ii in 0..ch[0].len() {
+				// if (i == (ch.len()-1)) {
+				// 	println!("ch[{}][{}] = {}, x[{}] = {}", i, ii, ch[i][ii], ii, x[ii]);
+				// }
 				s[i] = (s[i]+((x[ii]*ch[i][ii])%2))%2;
 			}
 		}
@@ -253,41 +256,18 @@ fn main() {
 	let embeding_cost = wght[0]; 
 	println!("embeding cost = {}", embeding_cost);
 
-	let mut state: u64 = 0; //current state of the trellis //message[(indm-1) as usize]
-	println!("state = {}", state);
-	println!("indx = {}, path.len() = {}", indx, path.len());
-	// println!("phath[{}][{}] = {}", indx-1, state, path[indx-1][state as usize]);
-	println!("------------");
-	for i in 0..path[indx-1].len() {
-		println!("phath[{}][{}] = {}", indx-1, i, path[indx-1][i as usize]);
-	}
-	println!("------------");
+	let mut state: u64 = message[(indm-1) as usize]; //current state of the trellis //message[(indm-1) as usize]
 	for _ie in 1..((b+1) as usize) { //for each copy of sub_h or h_hat
 		indm -= 1;
 		// let _i = b-ie; // To go backwards
 		for je in 1..((sub_width+1) as usize) { //for each column
 			indx -= 1;
 			let j = sub_width-je; // To go backwards
-			// print!("state: ");
-			// for i in 0..state.len() {
-			// 	print!("{}, ", state[i]);
-			// }
-			// println!(";");
-			// println!("state = {}", state as usize);
-			// println!("indx = {}", indx);
-			if _ie == 1 {
-				// println!("------------");
-				// for i in 0..path[indx-1].len() {
-					println!("path[{}][{}] = {}", indx, state, path[indx][state as usize]);
-				// }
-				// println!("------------");
-			}
 			y[indx] = path[indx][state as usize]; //set the stego object bit for this state
 			let mut phindex = 0;
 			if (indm+sub_height) > b { //decides if we need to use a trimed copy of h_hat or sub_h
 				phindex = (indm+sub_height)-b; 
 			}
-			// println!("ph_hat[{}][0] = {}, b = {}, indm = {}", phindex, ph_hat[phindex][0], b, indm);
 			state = state^((y[indx]*ph_hat[phindex][(j%sub_width) as usize])); //updates the state based on cheepest choice
 		}
 		if indm == 0 {
@@ -295,19 +275,24 @@ fn main() {
 		}
 		state = (2*state + message[indm-1 as usize]) % h; //updates the state to account for the pruning
 	}
+	// for i in 0..cover_object.len() {
+	// 	print!("{}, ", cover_object[i]);
+	// }
+	// println!(";");
+	// for i in 0..y.len() {
+	// 	print!("{}, ", y[i]);
+	// }
+	// println!(";");
+
 
 	let mut syndrom = Vec::new();
 	matrix_multi(&mut syndrom, &mut y,  &ext_h, ext_height);
-	print!("syndrom: ");
-	for i in 0..syndrom.len() {
-		print!("{}, ", syndrom[i]);
-	}
-	println!(";");
-	print!("stego ob: ");
-	for i in 0..y.len() {
-		print!("{}, ", y[i]);
-	}
-	println!(";");
+	// print!("syndrom: ");
+	// for i in 0..syndrom.len() {
+	// 	print!("{}, ", syndrom[i]);
+	// }
+	// println!(";");
+	
 	assert!(syndrom == message); //assert the encoding was done properl
 
 	for i in 1..full_image.len() {
