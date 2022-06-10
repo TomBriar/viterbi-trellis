@@ -15,7 +15,7 @@ fn main() {
 	let mut cover_object: Vec<u64> = Vec::new(); //cover_object vector 
 	let mut full_image: Vec<u64> = Vec::new(); // the entire image vector
 	let mut cover_weights: Vec<u64> = Vec::new(); //weights for each cover_object bit
-	// let jpeg_data = std::fs::read("./dog.jpeg").expect("failed to read image");
+	let jpeg_data = std::fs::read("./dog.jpeg").expect("failed to read image");
 	let img = match ImageReader::open("./dog.jpeg") { // grab image from filename
 		Ok(reader) => match reader.decode() {
 			Ok(img) => img,
